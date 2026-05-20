@@ -239,7 +239,7 @@ $USERNAME = "$USER_SECRET"
 
 [[upstreams]]
 type = "direct"
-interface = "$UP_IFACE"
+bindtodevice = "$UP_IFACE"
 EOF
 
 echo "Restarting Telemt..."
