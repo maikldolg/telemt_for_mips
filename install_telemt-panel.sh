@@ -4,16 +4,21 @@ set -e
 
 PANEL_CONFIG="/opt/etc/telemt-panel/config.toml"
 TELEMT_CONFIG="/opt/etc/telemt/config.toml"
+GITHUB_REPO="amirotin/telemt_panel"
 
 # Определяем архитектуру
 ARCH=$(uname -m)
 
 case "$ARCH" in
     aarch64)
-        IPK_URL="https://test.entware.net/mipssf-k3.4/4test/aa/telemt-panel_0.5.2-2_aarch64-3.10.ipk"
+        ARCH_TAG="aarch64"
+        ;;
+    x86_64)
+        ARCH_TAG="x86_64"
         ;;
     mips|mipsel)
-        IPK_URL="https://test.entware.net/mipssf-k3.4/4test/le/telemt-panel_0.5.2-2_mipsel-3.4.ipk"
+        ARCH_TAG="mipsel"
+        echo "⚠️  Предупреждение: архитектура $ARCH может не быть доступна в релизах"
         ;;
     *)
         echo "Неизвестная архитектура: $ARCH"
@@ -22,7 +27,7 @@ case "$ARCH" in
 esac
 
 echo "Определена архитектура: $ARCH"
-echo "Будет установлен пакет: $IPK_URL"
+echo "Репозиторий: https://github.com/$GITHUB_REPO/releases"
 echo ""
 
 # Остановка сервиса, если есть
@@ -62,60 +67,76 @@ fi
 echo "Используем порт: $LISTEN_PORT"
 echo ""
 
-echo "[2] Загрузка и распаковка ipk (tar.gz формат)"
+echo "[2] Получение последнего релиза из GitHub"
 
 TMPDIR="/opt/tmp/telemt-panel-install"
 rm -rf "$TMPDIR"
 mkdir -p "$TMPDIR"
 cd "$TMPDIR"
 
-wget -O panel.ipk "$IPK_URL"
+# Получаем информацию о последнем релизе через GitHub API
+LATEST_RELEASE=$(wget -q -O - "https://api.github.com/repos/$GITHUB_REPO/releases/latest")
 
-# ipk = tar.gz → распаковываем
-tar -xzvf panel.ipk
-
-if [ ! -f data.tar.gz ]; then
-    echo "❌ Ошибка: data.tar.gz отсутствует в ipk!"
+if [ -z "$LATEST_RELEASE" ]; then
+    echo "❌ Ошибка: не удалось получить информацию о релизе!"
     exit 1
 fi
 
-echo "[3] Установка файлов из data.tar.gz"
+# Извлекаем версию
+VERSION=$(echo "$LATEST_RELEASE" | grep -o '"tag_name": "[^"]*"' | head -1 | cut -d'"' -f4)
+echo "Найден релиз: $VERSION"
 
+# Формируем URL для архива
+ARCHIVE_URL="https://github.com/$GITHUB_REPO/releases/download/$VERSION/telemt-panel-${ARCH_TAG}-linux-gnu.tar.gz"
 
-# Временная директория
-WORKDIR="/opt/tmp/telemt-panel-unpack"
-rm -rf "$WORKDIR"
-mkdir -p "$WORKDIR"
+echo "Скачиваем архив: $ARCHIVE_URL"
+echo ""
 
-# Распаковываем data.tar.gz во временную папку
-tar -xzvf data.tar.gz -C "$WORKDIR"
-
-# Проверяем, что там есть opt/
-if [ ! -d "$WORKDIR/opt" ]; then
-    echo "❌ В data.tar.gz нет каталога opt/"
+# Скачиваем архив
+if ! wget -O telemt-panel.tar.gz "$ARCHIVE_URL"; then
+    echo "❌ Ошибка: не удалось скачать архив!"
     exit 1
 fi
 
-# Копируем содержимое opt/ в /opt
-cp -a "$WORKDIR/opt/"* /opt/
+# Распаковываем архив
+echo "[3] Распаковка архива"
+tar -xzf telemt-panel.tar.gz
 
-echo "[4] Проверка наличия telemt-panel"
-if ! command -v telemt-panel >/dev/null 2>&1; then
-    echo "❌ telemt-panel не найден после установки!"
+if [ ! -f telemt-panel ]; then
+    echo "❌ Ошибка: telemt-panel не найден в архиве!"
     exit 1
 fi
 
-echo "[5] Введите пароль для входа в панель:"
+chmod +x telemt-panel
+
+echo "[4] Установка telemt-panel"
+
+# Создаем директорию для бинарника
+mkdir -p /opt/sbin
+cp telemt-panel /opt/sbin/telemt-panel
+
+echo "[5] Проверка наличия telemt-panel"
+if ! /opt/sbin/telemt-panel --version >/dev/null 2>&1; then
+    echo "⚠️  Предупреждение: не удалось проверить версию telemt-panel"
+fi
+
+echo "[6] Введите пароль для входа в панель:"
 read PASS
 
-PASSWORD_HASH=$(echo "$PASS" | telemt-panel hash-password)
+PASSWORD_HASH=$(/opt/sbin/telemt-panel hash-password "$PASS" 2>/dev/null || echo "")
+
+if [ -z "$PASSWORD_HASH" ]; then
+    echo "❌ Ошибка: не удалось сгенерировать хеш пароля!"
+    exit 1
+fi
+
 echo "password_hash = $PASSWORD_HASH"
 
-echo "[6] Генерация jwt_secret"
+echo "[7] Генерация jwt_secret"
 JWT_SECRET=$(openssl rand -hex 32)
 echo "jwt_secret = $JWT_SECRET"
 
-echo "[7] Чтение auth_header из $TELEMT_CONFIG"
+echo "[8] Чтение auth_header из $TELEMT_CONFIG"
 
 if [ ! -f "$TELEMT_CONFIG" ]; then
     echo "❌ Файл $TELEMT_CONFIG не найден!"
@@ -131,7 +152,7 @@ fi
 
 echo "auth_header = $AUTH_HEADER"
 
-echo "[8] Создание нового конфига telemt-panel"
+echo "[9] Создание нового конфига telemt-panel"
 
 mkdir -p /opt/etc/telemt-panel
 
@@ -158,17 +179,39 @@ session_ttl = "24h"
 [users]
 EOF
 
-echo "[9] Перезапуск telemt-panel"
+echo "[10] Создание init скрипта для Entware"
 
-/opt/etc/init.d/S99telemt-panel restart || {
+cat > /opt/etc/init.d/S99telemt-panel <<'INITSCRIPT'
+#!/bin/sh
+
+ENABLED=yes
+PROCS=telemt-panel
+ARGS="-config /opt/etc/$PROCS/config.toml"
+PREARGS=""
+DESC="Telemt Panel"
+PATH=/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+. /opt/etc/init.d/rc.func
+INITSCRIPT
+
+chmod +x /opt/etc/init.d/S99telemt-panel
+
+echo "[11] Запуск telemt-panel"
+
+if /opt/etc/init.d/S99telemt-panel start; then
+    sleep 2
+    /opt/etc/init.d/S99telemt-panel status || true
+else
     echo "❌ Ошибка запуска telemt-panel!"
     exit 1
-}
+fi
 
 echo ""
 echo "==========================================="
 echo "✔ telemt-panel установлен и запущен"
+echo "✔ Версия: $VERSION"
 echo "✔ Конфиг: $PANEL_CONFIG"
 echo "✔ Порт: $LISTEN_PORT"
 echo "✔ Логин: admin"
+echo "✔ Init скрипт: /opt/etc/init.d/S99telemt-panel"
 echo "==========================================="
