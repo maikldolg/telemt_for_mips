@@ -135,7 +135,7 @@ if ! /opt/sbin/telemt-panel --version >/dev/null 2>&1; then
 fi
 
 echo "[6] Введите пароль для входа в панель:"
-read PASS
+read -r PASS
 
 PASSWORD_HASH=$(/opt/sbin/telemt-panel hash-password "$PASS" 2>/dev/null || echo "")
 
