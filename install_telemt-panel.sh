@@ -79,6 +79,7 @@ LATEST_RELEASE=$(wget -q -O - "https://api.github.com/repos/$GITHUB_REPO/release
 
 if [ -z "$LATEST_RELEASE" ]; then
     echo "❌ Ошибка: не удалось получить информацию о релизе!"
+    rm -rf "$TMPDIR"
     exit 1
 fi
 
@@ -95,6 +96,7 @@ echo ""
 # Скачиваем архив
 if ! wget -O telemt-panel.tar.gz "$ARCHIVE_URL"; then
     echo "❌ Ошибка: не удалось скачать архив!"
+    rm -rf "$TMPDIR"
     exit 1
 fi
 
@@ -117,6 +119,7 @@ if [ -z "$BINARY" ]; then
     echo "❌ Ошибка: telemt-panel не найден в архиве!"
     echo "Содержимое архива:"
     ls -la
+    rm -rf "$TMPDIR"
     exit 1
 fi
 
@@ -128,6 +131,9 @@ echo "[4] Установка telemt-panel"
 # Создаем директорию для бинарника
 mkdir -p /opt/sbin
 cp "$BINARY" /opt/sbin/telemt-panel
+
+# Очищаем временную директорию
+rm -rf "$TMPDIR"
 
 echo "[5] Проверка наличия telemt-panel"
 if ! /opt/sbin/telemt-panel --version >/dev/null 2>&1; then
