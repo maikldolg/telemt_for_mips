@@ -137,7 +137,7 @@ fi
 echo "[6] Введите пароль для входа в панель:"
 read -r PASS
 
-PASSWORD_HASH=$(/opt/sbin/telemt-panel hash-password "$PASS" 2>&1 | tail -1)
+PASSWORD_HASH=$(echo "$PASS" | /opt/sbin/telemt-panel hash-password 2>&1 | tail -1)
 
 if [ -z "$PASSWORD_HASH" ]; then
     echo "❌ Ошибка: не удалось сгенерировать хеш пароля!"
