@@ -102,18 +102,32 @@ fi
 echo "[3] Распаковка архива"
 tar -xzf telemt-panel.tar.gz
 
-if [ ! -f telemt-panel ]; then
+# Ищем бинарник - может быть назван telemt-panel-* или telemt-panel
+BINARY=""
+if [ -f "telemt-panel-${ARCH_TAG}-linux" ]; then
+    BINARY="telemt-panel-${ARCH_TAG}-linux"
+elif [ -f "telemt-panel" ]; then
+    BINARY="telemt-panel"
+else
+    # Ищем любой исполняемый файл который выглядит как telemt-panel
+    BINARY=$(find . -type f -name "telemt-panel*" | head -1)
+fi
+
+if [ -z "$BINARY" ]; then
     echo "❌ Ошибка: telemt-panel не найден в архиве!"
+    echo "Содержимое архива:"
+    ls -la
     exit 1
 fi
 
-chmod +x telemt-panel
+echo "Найден бинарник: $BINARY"
+chmod +x "$BINARY"
 
 echo "[4] Установка telemt-panel"
 
 # Создаем директорию для бинарника
 mkdir -p /opt/sbin
-cp telemt-panel /opt/sbin/telemt-panel
+cp "$BINARY" /opt/sbin/telemt-panel
 
 echo "[5] Проверка наличия telemt-panel"
 if ! /opt/sbin/telemt-panel --version >/dev/null 2>&1; then
