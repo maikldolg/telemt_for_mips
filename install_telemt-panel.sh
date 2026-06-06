@@ -226,6 +226,10 @@ else
     exit 1
 fi
 
+# Локальный IP
+IP=$(ip -4 addr show br0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || 
+     ip -4 addr show | grep -oP "(?<=inet\s)(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)\d+(\.\d+){3}" | head -n1)
+
 echo ""
 echo "==========================================="
 echo "✔ telemt-panel установлен и запущен"
@@ -234,4 +238,6 @@ echo "✔ Конфиг: $PANEL_CONFIG"
 echo "✔ Порт: $LISTEN_PORT"
 echo "✔ Логин: admin"
 echo "✔ Init скрипт: /opt/etc/init.d/S99telemt-panel"
+echo ""
+echo "🌐 http://${IP:-192.168.1.1}:$LISTEN_PORT"
 echo "==========================================="
