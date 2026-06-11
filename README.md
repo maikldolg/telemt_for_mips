@@ -12,7 +12,7 @@ sh /opt/tmp/install_telemt.sh
 curl -L https://raw.githubusercontent.com/augin/telemt_script/refs/heads/main/install_telemt-panel.sh -o /opt/tmp/install_telemt-panel.sh
 sh /opt/tmp/install_telemt-panel.sh
 ```
-эмуляция systemD для работы перезапуска и обновления чреез панель
+эмуляция systemD для работы перезапуска чреез панель и логов
 ```bash
 curl -L https://raw.githubusercontent.com/anch665/keendev/refs/heads/main/systemctl.sh -o /opt/usr/bin/systemctl
 chmod +x /opt/usr/bin/systemctl
