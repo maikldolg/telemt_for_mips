@@ -16,4 +16,6 @@ sh /opt/tmp/install_telemt-panel.sh
 ```bash
 curl -L https://raw.githubusercontent.com/anch665/keendev/refs/heads/main/systemctl.sh -o /opt/usr/bin/systemctl
 chmod +x /opt/usr/bin/systemctl
+curl -L https://raw.githubusercontent.com/anch665/keendev/refs/heads/main/journalctl.sh -o /opt/usr/bin/journalctl
+chmod +x /opt/usr/bin/journalctl
 ```
