@@ -185,7 +185,8 @@ cat > /opt/etc/init.d/S99telemt <<'EOF'
 
 ENABLED=yes
 PROCS=telemt
-ARGS="-d /opt/etc/$PROCS/config.toml"
+LOG_FILE="/tmp/log/telemt.log"
+ARGS="--log-file $LOG_FILE -d /opt/etc/$PROCS/config.toml"
 PREARGS=""
 DESC="Telemt MTProxy"
 PATH=/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin
