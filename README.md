@@ -18,4 +18,5 @@ curl -L https://raw.githubusercontent.com/anch665/keendev/refs/heads/main/system
 chmod +x /opt/usr/bin/systemctl
 curl -L https://raw.githubusercontent.com/anch665/keendev/refs/heads/main/journalctl.sh -o /opt/usr/bin/journalctl
 chmod +x /opt/usr/bin/journalctl
+/opt/etc/init.d/S99telemt-panel restart
 ```
