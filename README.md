@@ -1,12 +1,14 @@
 Уставновка telemt и telemt-panel на entware keenetic (только Mips)
 
 ```bash
-curl -L https://raw.githubusercontent.com/augin/telemt_script/refs/heads/main/installer_telemt_v2.sh -o /opt/tmp/install_telemt.sh
-sh /opt/tmp/install_telemt.sh
+cd /opt/tmp/
+curl -L https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt.sh -o /opt/tmp/install_telemt.sh
+sh install_telemt.sh
 ```
 ```bash
-curl -L https://raw.githubusercontent.com/augin/telemt_script/refs/heads/main/install_telemt-panel.sh -o /opt/tmp/install_telemt-panel.sh
-sh /opt/tmp/install_telemt-panel.sh
+cd /opt/tmp/
+curl -L https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt-panel.sh -o /opt/tmp/install_telemt-panel.sh
+sh install_telemt-panel.sh
 ```
 эмуляция systemD для работы перезапуска через панель и логов
 ```bash
