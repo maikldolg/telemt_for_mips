@@ -2,12 +2,12 @@
 
 ```bash
 cd /opt/tmp/
-curl -L https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt.sh -o /opt/tmp/install_telemt.sh
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt.sh
 sh install_telemt.sh
 ```
 ```bash
 cd /opt/tmp/
-curl -L https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt-panel.sh -o /opt/tmp/install_telemt-panel.sh
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt-panel.sh
 sh install_telemt-panel.sh
 ```
 эмуляция systemD для работы перезапуска через панель и логов
