@@ -4,144 +4,50 @@ set -e
 
 PANEL_CONFIG="/opt/etc/telemt-panel/config.toml"
 TELEMT_CONFIG="/opt/etc/telemt/config.toml"
-GITHUB_REPO="amirotin/telemt_panel"
+TELEMT_PANEL_URL="https://test.entware.net/mipssf-k3.4/4test/be/telemt-panel_0.6.0-1_mips-3.4.ipk"
 
-# Определяем архитектуру
-ARCH=$(uname -m)
+echo "=== Telemt Panel installer for Entware (mips) ==="
 
-case "$ARCH" in
-    aarch64)
-        ARCH_TAG="aarch64"
-        ;;
-    x86_64)
-        ARCH_TAG="x86_64"
-        ;;
-    mips|mipsel)
-        ARCH_TAG="mipsel"
-        echo "⚠️  Предупреждение: архитектура $ARCH может не быть доступна в релизах"
-        ;;
-    *)
-        echo "Неизвестная архитектура: $ARCH"
-        exit 1
-        ;;
-esac
-
-echo "Определена архитектура: $ARCH"
-echo "Репозиторий: https://github.com/$GITHUB_REPO/releases"
-echo ""
-
-# Остановка сервиса, если есть
+# --- Остановка сервиса если есть ---
 if [ -x /opt/etc/init.d/S99telemt-panel ]; then
     /opt/etc/init.d/S99telemt-panel stop >/dev/null 2>&1 || true
 fi
 
+# --- Проверка порта ---
 DEFAULT_PORT=8080
-
-echo "[1] Проверка занятости порта $DEFAULT_PORT"
 
 check_port() {
     PORT=$1
     if netstat -tuln | grep -q ":$PORT "; then
-        echo "⚠️  Порт $PORT уже занят!"
-        netstat -tulnp | grep ":$PORT " || true
         return 1
     fi
     return 0
 }
 
+echo "[1] Проверка занятости порта $DEFAULT_PORT"
+
 if ! check_port "$DEFAULT_PORT"; then
-    echo ""
-    echo "Введите новый порт для telemt-panel:"
-    read -r NEW_PORT
-
-    while ! check_port "$NEW_PORT"; do
-        echo "Порт $NEW_PORT тоже занят. Введите другой:"
-        read -r NEW_PORT
+    echo "⚠️  Порт $DEFAULT_PORT уже занят!"
+    printf "Введите новый порт для telemt-panel: "
+    read LISTEN_PORT || true
+    while ! check_port "$LISTEN_PORT"; do
+        printf "Порт $LISTEN_PORT тоже занят. Введите другой: "
+        read LISTEN_PORT || true
     done
-
-    LISTEN_PORT="$NEW_PORT"
 else
     LISTEN_PORT="$DEFAULT_PORT"
 fi
 
 echo "Используем порт: $LISTEN_PORT"
-echo ""
 
-echo "[2] Получение последнего релиза из GitHub"
+# --- Установка через opkg ---
+echo "[2] Установка telemt-panel через opkg..."
+opkg update
+opkg install "$TELEMT_PANEL_URL"
 
-TMPDIR="/opt/tmp/telemt-panel-install"
-rm -rf "$TMPDIR"
-mkdir -p "$TMPDIR"
-cd "$TMPDIR"
-
-# Получаем информацию о последнем релизе через GitHub API
-LATEST_RELEASE=$(wget -q -O - "https://api.github.com/repos/$GITHUB_REPO/releases/latest")
-
-if [ -z "$LATEST_RELEASE" ]; then
-    echo "❌ Ошибка: не удалось получить информацию о релизе!"
-    rm -rf "$TMPDIR"
-    exit 1
-fi
-
-# Извлекаем версию
-VERSION=$(echo "$LATEST_RELEASE" | grep -o '"tag_name": "[^"]*"' | head -1 | cut -d'"' -f4)
-echo "Найден релиз: $VERSION"
-
-# Формируем URL для архива
-ARCHIVE_URL="https://github.com/$GITHUB_REPO/releases/download/$VERSION/telemt-panel-${ARCH_TAG}-linux-gnu.tar.gz"
-
-echo "Скачиваем архив: $ARCHIVE_URL"
-echo ""
-
-# Скачиваем архив
-if ! wget -O telemt-panel.tar.gz "$ARCHIVE_URL"; then
-    echo "❌ Ошибка: не удалось скачать архив!"
-    rm -rf "$TMPDIR"
-    exit 1
-fi
-
-# Распаковываем архив
-echo "[3] Распаковка архива"
-tar -xzf telemt-panel.tar.gz
-
-# Ищем бинарник - может быть назван telemt-panel-* или telemt-panel
-BINARY=""
-if [ -f "telemt-panel-${ARCH_TAG}-linux" ]; then
-    BINARY="telemt-panel-${ARCH_TAG}-linux"
-elif [ -f "telemt-panel" ]; then
-    BINARY="telemt-panel"
-else
-    # Ищем любой исполняемый файл который выглядит как telemt-panel
-    BINARY=$(find . -type f -name "telemt-panel*" | head -1)
-fi
-
-if [ -z "$BINARY" ]; then
-    echo "❌ Ошибка: telemt-panel не найден в архиве!"
-    echo "Содержимое архива:"
-    ls -la
-    rm -rf "$TMPDIR"
-    exit 1
-fi
-
-echo "Найден бинарник: $BINARY"
-chmod +x "$BINARY"
-
-echo "[4] Установка telemt-panel"
-
-# Создаем директорию для бинарника
-mkdir -p /opt/sbin
-cp "$BINARY" /opt/sbin/telemt-panel
-
-# Очищаем временную директорию
-rm -rf "$TMPDIR"
-
-echo "[5] Проверка наличия telemt-panel"
-if ! /opt/sbin/telemt-panel --version >/dev/null 2>&1; then
-    echo "⚠️  Предупреждение: не удалось проверить версию telemt-panel"
-fi
-
-echo "[6] Введите пароль для входа в панель:"
-read -r PASS
+# --- Пароль ---
+echo "[3] Введите пароль для входа в панель:"
+read PASS || true
 
 PASSWORD_HASH=$(echo "$PASS" | /opt/sbin/telemt-panel hash-password 2>&1 | tail -1)
 
@@ -152,11 +58,13 @@ fi
 
 echo "password_hash = $PASSWORD_HASH"
 
-echo "[7] Генерация jwt_secret"
+# --- JWT secret ---
+echo "[4] Генерация jwt_secret..."
 JWT_SECRET=$(openssl rand -hex 32)
 echo "jwt_secret = $JWT_SECRET"
 
-echo "[8] Чтение auth_header из $TELEMT_CONFIG"
+# --- Читаем auth_header из telemt конфига ---
+echo "[5] Чтение auth_header из $TELEMT_CONFIG"
 
 if [ ! -f "$TELEMT_CONFIG" ]; then
     echo "❌ Файл $TELEMT_CONFIG не найден!"
@@ -172,17 +80,19 @@ fi
 
 echo "auth_header = $AUTH_HEADER"
 
-echo "[9] Создание нового конфига telemt-panel"
+# --- Конфиг ---
+echo "[6] Создание конфига telemt-panel..."
 
 mkdir -p /opt/etc/telemt-panel
 
-cat > "$PANEL_CONFIG" <<EOF
+cat > "$PANEL_CONFIG" <<TOML
 listen = "0.0.0.0:$LISTEN_PORT"
 
 [telemt]
 url = "http://127.0.0.1:9091"
 auth_header = "$AUTH_HEADER"
 binary_path = "/opt/usr/bin/telemt"
+
 [panel]
 binary_path = "/opt/sbin/telemt-panel"
 
@@ -197,16 +107,17 @@ jwt_secret = "$JWT_SECRET"
 session_ttl = "24h"
 
 [users]
-EOF
+TOML
 
-echo "[10] Создание init скрипта для Entware"
+# --- Init скрипт ---
+echo "[7] Создание init скрипта..."
 
 cat > /opt/etc/init.d/S99telemt-panel <<'INITSCRIPT'
 #!/bin/sh
 
 ENABLED=yes
 PROCS=telemt-panel
-ARGS="-config /opt/etc/$PROCS/config.toml"
+ARGS="-config /opt/etc/telemt-panel/config.toml"
 PREARGS=""
 DESC="Telemt Panel"
 PATH=/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -216,7 +127,8 @@ INITSCRIPT
 
 chmod +x /opt/etc/init.d/S99telemt-panel
 
-echo "[11] Запуск telemt-panel"
+# --- Запуск ---
+echo "[8] Запуск telemt-panel..."
 
 if /opt/etc/init.d/S99telemt-panel start; then
     sleep 2
@@ -226,14 +138,13 @@ else
     exit 1
 fi
 
-# Локальный IP
-IP=$(ip -4 addr show br0 2>/dev/null | grep -oP "(?<=inet\s)\d+(\.\d+){3}" || 
-     ip -4 addr show | grep -oP "(?<=inet\s)(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)\d+(\.\d+){3}" | head -n1)
+# --- Локальный IP ---
+IP=$(ip -4 addr show br0 2>/dev/null | grep -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -n1 || \
+     ip -4 addr show | grep -oE "(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)[0-9]+(\.[0-9]+){2}" | head -n1)
 
 echo ""
 echo "==========================================="
 echo "✔ telemt-panel установлен и запущен"
-echo "✔ Версия: $VERSION"
 echo "✔ Конфиг: $PANEL_CONFIG"
 echo "✔ Порт: $LISTEN_PORT"
 echo "✔ Логин: admin"
