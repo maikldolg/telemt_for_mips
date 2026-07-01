@@ -1,5 +1,3 @@
-Уставновка telemt и telemt-panel на entware keenetic (только Mips)
-
 Telemt 3.4.13
 ```bash
 opkg install curl
