@@ -1,10 +1,19 @@
 Уставновка telemt и telemt-panel на entware keenetic (только Mips)
 
+Telemt 3.4.13
 ```bash
 opkg install curl
 
 cd /opt/tmp/
-curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt.sh
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v13.sh
+sh install_telemt.sh
+```
+Telemt 3.4.18
+```bash
+opkg install curl
+
+cd /opt/tmp/
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v18.sh
 sh install_telemt.sh
 ```
 ```bash
