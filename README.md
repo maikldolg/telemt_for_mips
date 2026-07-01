@@ -16,6 +16,7 @@ cd /opt/tmp/
 curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v18.sh
 sh install_telemt.sh
 ```
+Telemt-panel
 ```bash
 cd /opt/tmp/
 curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt-panel.sh
