@@ -3,7 +3,7 @@ Telemt 3.4.23
 opkg install curl
 
 cd /opt/tmp/
-curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v13.sh
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v23.sh
 sh install_telemt_v23.sh
 ```
 Telemt 3.4.18
