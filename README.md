@@ -1,18 +1,10 @@
-Telemt 3.4.23
+Telemt
 ```bash
 opkg install curl
 
 cd /opt/tmp/
-curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v23.sh
-sh install_telemt_v23.sh
-```
-Telemt 3.4.18
-```bash
-opkg install curl
-
-cd /opt/tmp/
-curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt_v18.sh
-sh install_telemt_v18.sh
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt.sh
+sh install_telemt.sh
 ```
 Telemt-panel
 ```bash
