@@ -114,7 +114,7 @@ fi
 
 
 # --- MIPS architecture ---
-TELEMT_URL="https://test.entware.net/mipssf-k3.4/4test/be/telemt_3.5.5-1_mips-3.4.ipk"
+TELEMT_URL="https://test.entware.net/mipssf-k3.4/4test/be/telemt_3.4.25-1_mips-3.4.ipk"
 
 echo "Architecture: mips"
 echo "Telemt package: $TELEMT_URL"
