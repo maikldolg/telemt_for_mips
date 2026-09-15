@@ -6,6 +6,15 @@ cd /opt/tmp/
 curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_telemt.sh
 sh install_telemt.sh
 ```
+arm
+```bash
+opkg install curl
+
+cd /opt/tmp/
+curl -L -O https://raw.githubusercontent.com/maikldolg/telemt_for_mips/refs/heads/main/install_arm.sh
+sh install_arm.sh
+```
+
 Telemt-panel
 ```bash
 cd /opt/tmp/
